@@ -1,0 +1,327 @@
+package main;
+
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+public class main {
+
+    private static final String ADMIN_USERNAME = "admin";
+    private static final String ADMIN_PASSWORD = "admin123";
+
+    
+    private static Map<String, String[]> record = new HashMap<>();
+    private static Map<String, String[]> employees = new HashMap<>();
+    private static Map<String, String[]> archivedEmployees = new HashMap<>();
+    
+    private static int lastCount = 0; 
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\n==============================");
+            System.out.println("   ATTENDANCE TRACKING SYSTEM");
+            System.out.println("==============================");
+            System.out.println("1. Employee Log In");
+            System.out.println("2. Admin Log In");
+            System.out.println("3. Exit");
+
+            System.out.print("Enter your choice: ");
+            String choice = scanner.nextLine();
+
+            if (choice.equals("1")) {
+                employeeLogin(scanner);
+            } else if (choice.equals("2")) {
+                adminLogin(scanner); 
+            } else if (choice.equals("3")) {
+                System.out.println("Exiting System...");
+                break;
+            } else {
+                System.out.println("Invalid choice!");
+            }
+        }
+    }
+
+   
+
+    private static void adminLogin(Scanner scanner) {
+        System.out.print("\nEnter Admin username: ");
+        String username = scanner.nextLine();
+        System.out.print("Enter Admin password: ");
+        String password = scanner.nextLine();
+
+        if (username.equals(ADMIN_USERNAME) && password.equals(ADMIN_PASSWORD)) {
+            adminMenu(scanner);
+        } else {
+            System.out.println("Invalid Admin credentials!");
+        }
+    }
+
+    private static void adminMenu(Scanner scanner) {
+        while (true) {
+            System.out.println("\n--- Admin Menu ---");
+            System.out.println("1. Register New Employee");
+            System.out.println("2. View All Attendance Logs");
+            System.out.println("3. View Employees");
+            System.out.println("4. View Archive List");
+            System.out.println("5. Logout");
+            System.out.print("Enter choice: ");
+            String choice = scanner.nextLine();
+
+            switch (choice) {
+                case "1": registerEmployee(scanner); break; // Accesses static count directly
+                case "2": viewAllAttendance(); break;
+                case "3": manageEmployees(scanner); break;
+                case "4": viewArchive(); break;
+                case "5": return;
+                default: System.out.println("Invalid Choice.");
+            }
+        }
+    }
+
+    private static void registerEmployee(Scanner scanner) {
+        System.out.println("\n--- Register New Employee ---");
+        
+        lastCount++; 
+        String employeeID = Integer.toString(lastCount);
+
+        String username;
+        while (true) {
+            System.out.print("Create Username: ");
+            username = scanner.nextLine();
+            if (isUsernameTaken(username)) {
+                System.out.println("Username already taken!");
+            } else {
+                break;
+            }
+        }
+
+        System.out.print("Create Password: ");
+        String password = scanner.nextLine();
+        System.out.print("Enter Full Name: ");
+        String name = scanner.nextLine();
+
+        employees.put(employeeID, new String[]{name, username, password});
+        
+        System.out.println("\nSUCCESS!");
+        System.out.println("Assigned Employee ID: " + employeeID);
+        System.out.println("Employee Registered Successfully!");
+    }
+
+    private static void manageEmployees(Scanner scanner) {
+        if (employees.isEmpty()) {
+            System.out.println("No active employees.");
+            return;
+        }
+
+        System.out.println("\n--- Active Employees ---");
+        for (String id : employees.keySet()) {
+            System.out.println("ID: " + id + " | Name: " + employees.get(id)[0]);
+        }
+
+        System.out.print("\nEnter Employee ID to Archive (or press Enter to go back): ");
+        String idToArchive = scanner.nextLine();
+
+        if (employees.containsKey(idToArchive)) {
+            archivedEmployees.put(idToArchive, employees.remove(idToArchive));
+            System.out.println("Employee moved to Archive successfully.");
+        } else if (!idToArchive.isEmpty()) {
+            System.out.println("Employee ID not found.");
+        }
+    }
+
+    private static void viewArchive() {
+        if (archivedEmployees.isEmpty()) {
+            System.out.println("\nArchive is empty.");
+            return;
+        }
+        System.out.println("\n--- Archived Employees ---");
+        for (String id : archivedEmployees.keySet()) {
+            System.out.println("ID: " + id + " | Name: " + archivedEmployees.get(id)[0]);
+        }
+    }
+
+
+
+
+    private static void employeeLogin(Scanner scanner) {
+        System.out.print("\nEnter username: ");
+        String username = scanner.nextLine();
+        System.out.print("Enter password: ");
+        String password = scanner.nextLine();
+
+        String employeeID = login(username, password);
+        if (employeeID != null) {
+            System.out.println("\nWelcome, " + employees.get(employeeID)[0] + "!");
+            employeeMenu(scanner, employeeID);
+        } else {
+            System.out.println("Invalid credentials or Account Archived!");
+        }
+    }
+
+    private static String login(String username, String password) {
+        for (String id : employees.keySet()) {
+            String[] data = employees.get(id);
+            if (data[1].equals(username) && data[2].equals(password)) return id;
+        }
+        return null;
+    }
+
+    private static void employeeMenu(Scanner scanner, String employeeID) {
+        while (true) {
+            System.out.println("\n--- Employee Menu ---");
+            System.out.println("1. Time-in");
+            System.out.println("2. Lunch Break Start");
+            System.out.println("3. Lunch Break End");
+            System.out.println("4. Time-out");
+            System.out.println("5. View My Attendance & Total Hours");
+            System.out.println("6. Logout");
+
+            System.out.print("Enter choice: ");
+            String choice = scanner.nextLine();
+
+            switch (choice) {
+                case "1": timeIn(employeeID); break;
+                case "2": lunchBreakStart(employeeID); break;
+                case "3": lunchBreakDone(employeeID); break;
+                case "4": timeOut(employeeID); break;
+                case "5": viewOwnAttendance(employeeID); break;
+                case "6": return;
+                default: System.out.println("Invalid Choice.");
+            }
+        }
+    }
+
+   
+
+    private static void timeIn(String employeeID) {
+        if (record.containsKey(employeeID)) {
+            System.out.println("Validation Error: Already timed in for today.");
+            return;
+        }
+        String time = getCurrentTime();
+        record.put(employeeID, new String[]{time, "N/A", "N/A", "N/A"});
+        System.out.println("Success: Timed in at " + time);
+    }
+
+    private static void lunchBreakStart(String employeeID) {
+        if (!record.containsKey(employeeID)) {
+            System.out.println("Validation Error: Please Time-in first.");
+            return;
+        }
+        String[] data = record.get(employeeID);
+        if (!data[2].equals("N/A")) {
+            System.out.println("Validation Error: Lunch already started.");
+            return;
+        }
+        if (!data[1].equals("N/A")) {
+            System.out.println("Validation Error: Already timed out.");
+            return;
+        }
+        data[2] = getCurrentTime();
+        System.out.println("Success: Lunch break started at " + data[2]);
+    }
+
+    private static void lunchBreakDone(String employeeID) {
+        if (!record.containsKey(employeeID)) {
+            System.out.println("Error: No record found.");
+            return;
+        }
+        String[] data = record.get(employeeID);
+        if (data[2].equals("N/A")) {
+            System.out.println("Validation Error: Start lunch first.");
+            return;
+        }
+        if (!data[3].equals("N/A")) {
+            System.out.println("Validation Error: Lunch already finished.");
+            return;
+        }
+        data[3] = getCurrentTime();
+        System.out.println("Success: Lunch break ended at " + data[3]);
+    }
+
+    private static void timeOut(String employeeID) {
+        if (!record.containsKey(employeeID)) {
+            System.out.println("Validation Error: Time-in first.");
+            return;
+        }
+        String[] data = record.get(employeeID);
+        if (!data[1].equals("N/A")) {
+            System.out.println("Validation Error: Already timed out.");
+            return;
+        }
+        if (!data[2].equals("N/A") && data[3].equals("N/A")) {
+            System.out.println("Validation Error: End your lunch break before timing out.");
+            return;
+        }
+
+        data[1] = getCurrentTime();
+        System.out.println("Success: Timed out at " + data[1]);
+    }
+
+    private static void viewOwnAttendance(String employeeID) {
+        if (!record.containsKey(employeeID)) {
+            System.out.println("No records found.");
+            return;
+        }
+        String[] data = record.get(employeeID);
+        String name = employees.containsKey(employeeID) ? employees.get(employeeID)[0] : archivedEmployees.get(employeeID)[0];
+
+        System.out.println("\n--- Attendance Summary ---");
+        System.out.println("Employee ID: " + employeeID);
+        System.out.println("Name:        " + name);
+        System.out.println("Time-In:     " + data[0]);
+        System.out.println("Lunch:       " + data[2] + " to " + data[3]);
+        System.out.println("Time-Out:    " + data[1]);
+        System.out.println("Total Work Hours (Net): " + calculateHours(employeeID));
+    }
+
+    private static void viewAllAttendance() {
+        if (record.isEmpty()) {
+            System.out.println("No logs found.");
+            return;
+        }
+        for (String id : record.keySet()) {
+            viewOwnAttendance(id);
+        }
+    }
+
+    private static String calculateHours(String employeeID) {
+        try {
+            String[] data = record.get(employeeID);
+            if (data[1].equals("N/A")) return "In Progress";
+
+            SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a");
+            Date in = sdf.parse(data[0]);
+            Date out = sdf.parse(data[1]);
+
+            long totalMillis = out.getTime() - in.getTime();
+            long breakMillis = 0;
+
+            if (!data[2].equals("N/A") && !data[3].equals("N/A")) {
+                Date lStart = sdf.parse(data[2]);
+                Date lEnd = sdf.parse(data[3]);
+                breakMillis = lEnd.getTime() - lStart.getTime();
+            }
+
+            long netMillis = totalMillis - breakMillis;
+            long hrs = netMillis / (1000 * 60 * 60);
+            long mins = (netMillis / (1000 * 60)) % 60;
+
+            return hrs + " hrs, " + mins + " mins";
+        } catch (Exception e) {
+            return "Error calculating time.";
+        }
+    }
+
+    private static boolean isUsernameTaken(String username) {
+        for (String[] data : employees.values()) if (data[1].equalsIgnoreCase(username)) return true;
+        for (String[] data : archivedEmployees.values()) if (data[1].equalsIgnoreCase(username)) return true;
+        return false;
+    }
+
+    private static String getCurrentTime() {
+        return new SimpleDateFormat("hh:mm a").format(new Date());
+    }
+}
+Displaying main.java.
